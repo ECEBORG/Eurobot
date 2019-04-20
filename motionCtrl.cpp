@@ -68,6 +68,7 @@ enc_r(ENC_R_DATA1,ENC_R_DATA2,NC,200)
     asserv_ticker_ = new Ticker;
     asserv_ticker_->attach(callback(this, &motionCtrl::asserv), ASSERV_DELAY);
 }
+
 float recalib(float Cap)
 {
    if(Cap>M_PI)Cap-=2*M_PI;
@@ -328,14 +329,6 @@ update_Motor(float sPwm, char cote)
 
                 sPwm = constrain(sPwm, -1, 1);
 
-            // step the raw value
-                /*if (abs(sPwm - current) > PWM_STEP)
-                {
-                    if (sPwm > current)
-                        sPwm = current + PWM_STEP;
-                    else
-                        sPwm = current - PWM_STEP;
-                }  */
                 sPwm=this->appConsigne(sPwm);
                 last_Pwm_l= sPwm;
                 sPwm = SIGN(sPwm) * map(ABS(sPwm), 0, 1, PWM_MIN, PWM_MAX);
@@ -361,83 +354,33 @@ update_Motor(float sPwm, char cote)
         
         void motionCtrl::Compute_PID()
         {
-    /*float Xerr=x_goal-Posx;
-    float Yerr=y_goal-Posy;
-    float Aerr=angl_goal-Angle;
-    Dist=sqrt((Xerr*Xerr)+(Yerr*Yerr));
-    Cap= (atan2(Yerr,Xerr)-Angle);
-    
-    Cap=recalib(Cap);
-    if(Cap>(M_PI/2)|| Cap<(-M_PI/2))
-    {
-        Dist=-Dist;
-        Cap+=M_PI;
-        Cap=recalib(Cap);
-    }
-    
-    this->pidDistSetGoal(Dist);
-    this->pidAngleSetGoal(Cap);*/
+
+
+
+
+            Dconsign=Dist_Consigne();
+            AConsign=Ang_Consigne();
+
             if (isFinished)
             {
-                pid_dist_out_ = 0;
-                pid_angle_out_ = 0;
+                Dconsign = 0;
+                AConsign = 0;
             }
             else
             {
-                pid_dist_.setProcessValue(-pid_dist_goal_);
+                pid_dist_.setProcessValue(-Dconsign);
                 pid_dist_out_ = pid_dist_.compute();
 
-                pid_angle_.setProcessValue(pid_angle_goal_);
+                pid_angle_.setProcessValue(AConsign);
                 pid_angle_out_ = pid_angle_.compute();
-        //sPwm_L=pid_dist_out_;
-        //sPwm_R=pid_angle_out_;
+
             }
             sPwm_L=pid_dist_out_;
             sPwm_R=pid_angle_out_;
-            //pid_angle_out_=Ang_Consigne();
-            /*float consigne=Dist_Consigne();
-            affiche=consigne;
-            pid_dist_out_ = map(ABS(pid_dist_out_), 0, consigne, PWM_MIN, PWM_MAX);*/
-            
-     //sPwm_L=pid_angle_out_;
-       //sPwm_R=pid_dist_out_;
-    /*
-    float TDist= (PID_DIST_D*(Dist-Dist_last))+((Dist_last+Dist)*PID_DIST_I)+(Dist*PID_DIST_P);
-    float TAngle= (PID_ANGLE_D*(Cap-Cap_last))+((Cap_last+Cap)*PID_ANGLE_I)+(Cap*PID_ANGLE_P);
-   
-    Dist_last=coef_corrTDist;
-    Cap_last=TAngle;
-    */
 
             float mot_l_val = pid_dist_out_ - pid_angle_out_;
             float mot_r_val = pid_dist_out_ + pid_angle_out_;
 
-        // if the magnitude of one of the two is > 1, divide by the bigest of these
-        // two two magnitudes (in order to keep the scale)
-            if ((abs(mot_l_val) > 1) || (abs(mot_r_val) > 1))
-            {
-                float m = max(abs(mot_l_val), abs(mot_r_val));
-                mot_l_val /= m;
-                mot_r_val /= m;
-            }
-       //sPwm_L=mot_l_val/1.5;
-        //sPwm_R=mot_r_val/1.5;
-
-
-
-        //sPwm_L=pid_dist_out_;
-        //sPwm_R=pid_angle_out_;
-        //sPwm_L=update_Motor(mot_l_val,'l')/1.5;
-        //sPwm_R=update_Motor(mot_r_val,'r')/1.5;
-       //sPwm_R=Dist;
-        //s1.update();
-        //s2.update();
-            this->consigne();
-            MOTOR_L_PWM=update_Motor(mot_l_val,'l')/1.5;
-            MOTOR_R_PWM=update_Motor(mot_r_val,'r')/1.5*coef_corr;
-            sPwm_L=MOTOR_L_PWM;
-            sPwm_R=MOTOR_R_PWM/coef_corr;
-            //affiche=Liste.front().type;
             Dist_last=Dist;
             Cap_last=Cap;
 
@@ -520,23 +463,23 @@ void motionCtrl::addtask(Task t)
 
 void motionCtrl::adjust_speed_motors()
 {
-	float vitess_l= this->enc_l_val- this->enc_l_last;
-	float vitess_r=this->enc_r_val- this->enc_r_last;
+    float vitess_l= this->enc_l_val- this->enc_l_last;
+    float vitess_r=this->enc_r_val- this->enc_r_last;
 
-	float pwm_speed_l=vitess_l/this->last_Pwm_l;
-	float pwm_speed_r=vitess_r/this->last_Pwm_r;
+    float pwm_speed_l=vitess_l/this->last_Pwm_l;
+    float pwm_speed_r=vitess_r/this->last_Pwm_r;
     this->affiche=(pwm_speed_l-pwm_speed_r)/10000;
-	if (vitess_l-vitess_r>0)
-	{
-		MOTOR_R_PWM=sPwm_R-0.01;
+    if (vitess_l-vitess_r>0)
+    {
+        MOTOR_R_PWM=sPwm_R-0.01;
         MOTOR_L_PWM=sPwm_L+0.01;
 
-	}
-	else 
-	{
-		MOTOR_L_PWM=sPwm_L-0.01;
+    }
+    else 
+    {
+        MOTOR_L_PWM=sPwm_L-0.01;
         MOTOR_R_PWM=sPwm_R+0.01;
-	}
+    }
     
     
 
@@ -550,15 +493,9 @@ void motionCtrl::asserv()
     //Posx++;
   this->fetchEncodersValue();
   this->update_Pos();
-  this->adjust_speed_motors();
   this->updateTask();
-  this->adjust_speed_motors();
-  this->consigne();
-  sPwm_L=this->appConsigne(sPwm_L);
-  sPwm_R=this->appConsigne(sPwm_R);
-  //this->Compute_PID();
-  last_Pwm_r=MOTOR_R_PWM;
-  last_Pwm_l=MOTOR_L_PWM;
+
+  
   if ((ABS(this->Dist) < MC_TARGET_TOLERANCE_DIST) )//&& (ABS(cur_speed) < MC_TARGET_TOLERANCE_SPEED))
         {
 
@@ -573,14 +510,14 @@ void motionCtrl::asserv()
     affiche="toto";
 }*/
 
-/*if (isFinished)
+if (isFinished)
 {   
     this->MAJTask();
     isFinished=false;
 }
-else
+/*else
 {
     this->adjust_speed_motors();
-}
+}*/
 
 }
