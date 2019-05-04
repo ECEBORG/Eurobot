@@ -11,6 +11,7 @@
 #include "SharpSensor.h"
 #include "string.h"
 
+
 #define ENC_RADIUS          20.0                    // one encoder radius
 #define ENC_PERIMETER       (2*M_PI*ENC_RADIUS)     // one encoder perimeter
 #define ENC_POS_RADIUS      87                      // distance from one encoder to the center of the robot
@@ -78,10 +79,14 @@ public:
 	float appConsigne(float pwm);
 	void pidDistSetGoal(float goal);
     void pidAngleSetGoal(float goal);
+    void sendRight(uint32_t decimal,uint32_t currentff);
+    void sendLeft(uint32_t decimal,uint32_t currentff);
     float affiche;
 	int32_t enc_l_val,enc_l_last,enc_r_val,enc_r_last;
 	float vitesse_consigne;
 	SharpSensor s1,s2;
+	
+
 	
 	void addtask(Task t);
 	std::vector<Task> Liste;

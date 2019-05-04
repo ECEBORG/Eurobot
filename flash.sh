@@ -1,2 +1,2 @@
 mbed compile -m auto -t GCC_ARM
-cp /home/remy/test/testPos/BUILD/NUCLEO_F429ZI/GCC_ARM/testPos.bin /media/remy/NODE_F429ZI
+cp /home/daniel/Desktop/env/mbed_program/BUILD/NUCLEO_L476RG/GCC_ARM/mbed_program.bin /media/daniel/NODE_L476RG

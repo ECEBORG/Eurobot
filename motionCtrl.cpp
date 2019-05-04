@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <time.h>
 
+CAN can(D14,D15);
 
 motionCtrl::motionCtrl(float m_Posx,float m_Posy,float m_Angle,std::vector<Task> m_Liste) :
 
@@ -64,11 +65,13 @@ enc_r(ENC_R_DATA1,ENC_R_DATA2,NC,200)
     Posy=m_Posy;
     Angle=m_Angle;
 
+    can.frequency(250000);
+    can.mode(CAN::Normal);
+
     timer.start();
     asserv_ticker_ = new Ticker;
     asserv_ticker_->attach(callback(this, &motionCtrl::asserv), ASSERV_DELAY);
 }
-
 float recalib(float Cap)
 {
    if(Cap>M_PI)Cap-=2*M_PI;
@@ -329,6 +332,14 @@ update_Motor(float sPwm, char cote)
 
                 sPwm = constrain(sPwm, -1, 1);
 
+            // step the raw value
+                /*if (abs(sPwm - current) > PWM_STEP)
+                {
+                    if (sPwm > current)
+                        sPwm = current + PWM_STEP;
+                    else
+                        sPwm = current - PWM_STEP;
+                }  */
                 sPwm=this->appConsigne(sPwm);
                 last_Pwm_l= sPwm;
                 sPwm = SIGN(sPwm) * map(ABS(sPwm), 0, 1, PWM_MIN, PWM_MAX);
@@ -354,12 +365,8 @@ update_Motor(float sPwm, char cote)
         
         void motionCtrl::Compute_PID()
         {
-
-
-
-
-            Dconsign=Dist_Consigne();
-            AConsign=Ang_Consigne();
+            float Dconsign=Dist_Consigne();
+            float AConsign=Ang_Consigne();
 
             if (isFinished)
             {
@@ -383,7 +390,6 @@ update_Motor(float sPwm, char cote)
 
             Dist_last=Dist;
             Cap_last=Cap;
-
         }
         void motionCtrl::MAJTask()
         {
@@ -463,26 +469,59 @@ void motionCtrl::addtask(Task t)
 
 void motionCtrl::adjust_speed_motors()
 {
-    float vitess_l= this->enc_l_val- this->enc_l_last;
-    float vitess_r=this->enc_r_val- this->enc_r_last;
+	float vitess_l= this->enc_l_val- this->enc_l_last;
+	float vitess_r=this->enc_r_val- this->enc_r_last;
 
-    float pwm_speed_l=vitess_l/this->last_Pwm_l;
-    float pwm_speed_r=vitess_r/this->last_Pwm_r;
+	float pwm_speed_l=vitess_l/this->last_Pwm_l;
+	float pwm_speed_r=vitess_r/this->last_Pwm_r;
     this->affiche=(pwm_speed_l-pwm_speed_r)/10000;
-    if (vitess_l-vitess_r>0)
-    {
-        MOTOR_R_PWM=sPwm_R-0.01;
+	if (vitess_l-vitess_r>0)
+	{
+		MOTOR_R_PWM=sPwm_R-0.01;
         MOTOR_L_PWM=sPwm_L+0.01;
 
-    }
-    else 
-    {
-        MOTOR_L_PWM=sPwm_L-0.01;
+	}
+	else 
+	{
+		MOTOR_L_PWM=sPwm_L-0.01;
         MOTOR_R_PWM=sPwm_R+0.01;
-    }
+	}
     
     
 
+}
+
+
+void sendRight(uint32_t decimal,uint32_t currentff) {
+    
+    char payload[6];
+    payload[0]=(uint32_t)decimal;
+    payload[1]=(uint32_t)decimal >> 8;
+    payload[2]=(uint32_t)decimal >> 16;
+    payload[3]=(uint32_t)decimal >> 24;
+    payload[4]=(uint32_t)currentff;
+    payload[5]=(uint32_t)currentff >> 8;
+
+
+    if(can.write(CANMessage(0x46D, payload, 6))) {
+
+        //pc.printf("RightMotor velocity sent");
+    } 
+}
+
+void sendLeft(uint32_t decimal,uint32_t currentff) {
+
+    char payload[6];
+    payload[0]=(uint32_t)decimal;
+    payload[1]=(uint32_t)decimal >> 8;
+    payload[2]=(uint32_t)decimal >> 16;
+    payload[3]=(uint32_t)decimal >> 24;
+    payload[4]=(uint32_t)currentff;
+    payload[5]=(uint32_t)currentff >> 8;
+
+    if(can.write(CANMessage(0x48D, payload, 6))) {
+        //pc.printf("LeftMotor velocity sent");
+    }
 }
 
 
@@ -495,7 +534,7 @@ void motionCtrl::asserv()
   this->update_Pos();
   this->updateTask();
 
-  
+  this->Compute_PID();
   if ((ABS(this->Dist) < MC_TARGET_TOLERANCE_DIST) )//&& (ABS(cur_speed) < MC_TARGET_TOLERANCE_SPEED))
         {
 
