@@ -4,9 +4,9 @@
 #include "pinOut.h"
 #include "utils.h"
 #include <time.h>
+#include "CANMsg.h"
 
-CAN can(D14,D15);
-
+CAN                 can(PB_8, PB_9);
 motionCtrl::motionCtrl(float m_Posx,float m_Posy,float m_Angle,std::vector<Task> m_Liste) :
 
 
@@ -514,7 +514,7 @@ void sendLeft(uint32_t decimal,uint32_t currentff) {
     char payload[6];
     payload[0]=(uint32_t)decimal;
     payload[1]=(uint32_t)decimal >> 8;
-    payload[2]=(uint32_t)decimal >> 16;
+    payload[2]=(uint32_t)decimal >> 16; 
     payload[3]=(uint32_t)decimal >> 24;
     payload[4]=(uint32_t)currentff;
     payload[5]=(uint32_t)currentff >> 8;
@@ -528,11 +528,16 @@ void sendLeft(uint32_t decimal,uint32_t currentff) {
 
 void motionCtrl::asserv()
 {
+
     //bool ret=false;
     //Posx++;
   this->fetchEncodersValue();
   this->update_Pos();
-  this->updateTask();
+  s1.update();
+  s2.update();
+  sPwm_L= s1.get_val();
+  sPwm_R= s2.get_val();
+  /*this->updateTask();
 
   this->Compute_PID();
   if ((ABS(this->Dist) < MC_TARGET_TOLERANCE_DIST) )//&& (ABS(cur_speed) < MC_TARGET_TOLERANCE_SPEED))
@@ -541,6 +546,9 @@ void motionCtrl::asserv()
             this->isFinished = true;
         }
 
+    
+    sPwm_L= s1.get_val();
+    sPwm_R= s2.get_val();*/
 
   //this->sharp();
   //sPwm_R=s2.get_val();
@@ -549,11 +557,11 @@ void motionCtrl::asserv()
     affiche="toto";
 }*/
 
-if (isFinished)
+/*if (isFinished)
 {   
     this->MAJTask();
     isFinished=false;
-}
+}*/
 /*else
 {
     this->adjust_speed_motors();

@@ -21,6 +21,7 @@
 #define TICKS_TO_MM_L(val)  ((val)/TICKS_PER_MM_L)
 #define MM_TO_TICKS_R(val)  ((val)*TICKS_PER_MM_R)
 #define TICKS_TO_MM_R(val)  ((val)/TICKS_PER_MM_R)
+
 #define ENC_L_DATA1 D11
 
 #define Speed_per_PWM_l 1.5
@@ -33,7 +34,7 @@
 #define perim_wheel 128.74
 #define reso_encoder 2050.0
 #define coef_corr 1.290322581
-#define entraxe 310.0
+#define entraxe 248.0
 #define MAX_DECEL 2000
 #define MAX_V 250
 #define MAX_A 600
@@ -85,7 +86,6 @@ public:
 	int32_t enc_l_val,enc_l_last,enc_r_val,enc_r_last;
 	float vitesse_consigne;
 	SharpSensor s1,s2;
-	
 
 	
 	void addtask(Task t);
